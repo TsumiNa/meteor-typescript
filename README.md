@@ -1,1 +1,57 @@
 [![Build Status](https://travis-ci.org/TsumiNa/meteor-typescript.svg)](https://travis-ci.org/TsumiNa/meteor-typescript)
+
+# Meteor-Typescript
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [SystemJS API](#systemjs-api)
+- [Roadmap](#roadmap)
+- [Copyright and license](#copyright-and-license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Use typescript with ES6 modules loader on both side!
+
+**This package add new file extensions:** `*.ts`
+**This package adds SystemJS to your project.**
+
+All `*.ts` files will be compiled to `*.js` and bundld with your Meteor app. They won't get executed until you request them. SystenJS support both side.
+
+You can combind this with other systemjs required packages like [meteor-aurelia](https://github.com/TsumiNa/meteor-aurelia).
+
+**This package use [typescript@1.6.2](https://github.com/Microsoft/TypeScript/releases/tag/v1.6.2) and [systemjs@0.19.3](https://github.com/systemjs/systemjs/releases/tag/0.19.3)**
+
+See detail about [TypeScript](https://github.com/Microsoft/TypeScript) and [SystemJS](https://github.com/systemjs/systemjs)
+
+
+## Installation
+
+Just add this package to your app:
+```bash
+$ meteor add tsumina:meteor-typescript
+```
+
+## Usage
+
+TODO
+
+
+## SystemJS API
+
+Full SystemJS API docs can be found [on their Github repo](https://github.com/systemjs/systemjs/blob/master/docs/system-api.md)
+
+
+### Roadmap
+
+- [ ] Improve README
+- [ ] Support TypeCheck 
+- [ ] Full tests coverage
+
+
+### Copyright and license
+
+Code and documentation &copy; 2015 [TsumiNa](https://github.com/TsumiNa)
+Released under the MIT license. 

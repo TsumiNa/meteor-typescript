@@ -16,7 +16,7 @@ Compiler.prototype.processFilesForTarget = function (files) {
     // console.info(arch);
 
     // make module name
-    var moduleName = file.getPathInPackage().replace(/\\/g,'/').replace('.ts','');
+    var moduleName = file.getPathInPackage().replace(/.tsx?/,'');
 
     var output = ts.transpileModule(file.getContentsAsString(), {
       compilerOptions: {
@@ -32,7 +32,7 @@ Compiler.prototype.processFilesForTarget = function (files) {
     // process and add the output
     file.addJavaScript({
       data: output,
-      path: file.getPathInPackage().replace('.ts','.js'),
+      path: file.getPathInPackage().replace(/.tsx?/,'.js'),
       sourcePath: file.getPathInPackage()
     });
   });
