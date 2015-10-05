@@ -30,6 +30,10 @@ Compiler.prototype.processFilesForTarget = function (files) {
     }).outputText;
 
     // process and add the output
-    file.addJavaScript({ data: output, path: file.getPathInPackage().replace('.ts','.js') });
+    file.addJavaScript({
+      data: output,
+      path: file.getPathInPackage().replace('.ts','.js'),
+      sourcePath: file.getPathInPackage()
+    });
   });
 };
