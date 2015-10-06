@@ -1,17 +1,12 @@
-[![Build Status](https://travis-ci.org/TsumiNa/meteor-typescript.svg)](https://travis-ci.org/TsumiNa/meteor-typescript)
-
 # Meteor-Typescript
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+[![Build Status](https://travis-ci.org/TsumiNa/meteor-typescript.svg)](https://travis-ci.org/TsumiNa/meteor-typescript)
 
 - [Installation](#installation)
 - [Usage](#usage)
 - [SystemJS API](#systemjs-api)
 - [Roadmap](#roadmap)
 - [Copyright and license](#copyright-and-license)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Use typescript with ES6 modules loader on both side!
 
