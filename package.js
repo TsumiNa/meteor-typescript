@@ -14,15 +14,11 @@ Package.onUse(function(api) {
   api.versionsFrom('1.2.0.2');
   api.use('isobuild:compiler-plugin@1.0.0');
   api.use('promise');
-  api.addFiles('lib/require.js', 'server');
-  api.addFiles([
-    'lib/URLPolyfill.js',
-    'lib/system.src.js'
-  ])
 });
 
 Package.registerBuildPlugin({
   name: 'typescript',
+  use: ['promise'],
   sources : [
     'plugin/handler.js'
   ],
