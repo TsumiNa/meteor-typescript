@@ -3,4 +3,4 @@ sudo: required
 node_js:
 - "4.1.0"
 before_install:
-- "sudo curl -L http://git.io/ejPSng | /bin/sh"
+- "curl -L http://git.io/ejPSng | /bin/sh"
