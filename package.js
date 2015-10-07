@@ -1,6 +1,6 @@
 Package.describe({
   name: 'tsumina:meteor-typescript',
-  version: '0.1.0',
+  version: '0.1.1',
   // Brief, one-line summary of the package.
   summary: 'A configurable typescript compiler to transform .ts files to .js to use it both side',
   // URL to the Git repository containing the source code for this package.
@@ -20,10 +20,14 @@ Package.registerBuildPlugin({
   name: 'typescript',
   use: ['ecmascript'],
   sources : [
+    'lib/msg.js',
+    'lib/utils.js',
     'plugin/handler.js'
   ],
   npmDependencies : {
-    'typescript' : '1.6.2' 
+    'typescript' : '1.6.2',
+    'chalk': '1.1.1',
+    'jsonfile': '2.2.2'
   }
 })
 
