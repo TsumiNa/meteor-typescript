@@ -27,7 +27,7 @@ Package.registerBuildPlugin({
   npmDependencies : {
     'typescript' : '1.6.2',
     'chalk': '1.1.1',
-    'jsonfile': '2.2.2'
+    'fs-extra': '0.24.0'
   }
 })
 
