@@ -1,3 +1,5 @@
+/* global msg */
+/* global Npm */
 const ts = Npm.require('typescript');
 const fse = Npm.require('fs-extra');
 
@@ -61,8 +63,13 @@ class Compiler {
         let _msg_1 = msg.Message('111111111111111');
         console.info(_msg_1);
 
-        let _cache = new Map,
-            _complieFiles = [];
+        let _complieFiles = [],
+            _flieArch = files[0].getArch();
+
+        if (!this._cache.has(_flieArch)) {
+            this._cache.set(_flieArch, new Map);
+        };
+
 
         // check input files find which was modified
         // push them into `_complieFiles`
@@ -74,58 +81,53 @@ class Compiler {
             if (_fileExtension === 'd.ts') {
                 _complieFiles.push(_filePath);
             } else {
-                if (!this._cache.has(_filePath) || this._cache.get(_filePath).hash !== _fileHash) {
+                if (!this._cache.get(_flieArch).has(_filePath) ||
+                    this._cache.get(_flieArch).get(_filePath).hash !== _fileHash) {
                     _complieFiles.push(_filePath);
                 }
             };
 
-            _cache.set(_filePath, {
+            this._cache.get(_flieArch).set(_filePath, {
                 hash: _fileHash,
                 index: index
             });
         })
 
-        // swap cache
-        this._cache.clear();
-        this._cache = _cache;
-
         // exec
-        this.processer(_complieFiles, this._options, files)
+        this._processer(_complieFiles, files, _flieArch)
 
         let _msg_2 = msg.Error('222222222222222');
         console.info(_msg_2);
     }
 
-    processer(fileNames, options, files) {
+    _processer(fileNames, files, fileArch) {
 
-        let _msg_3 = msg.Warning('33333333333');
+        let _msg_3 = msg.Warning(fileNames);
         console.info(_msg_3);
 
 
-        let program = ts.createProgram(fileNames, options);
+        let program = ts.createProgram(fileNames, this._options);
         let emitResult = program.emit(undefined, (outputName, output) => {
-            output = output.replace("System.register([", 'System.register("' + outputName + '",[');
-            files[0].addJavaScript({
-                data: output,
-                path: outputName
-                // sourcePath: outputName.
-            });
-        });
+                let index = this._cache.get(fileArch).get(outputName).index;
+                output = output.replace("System.register([", 'System.register("' + outputName + '",[');
+                files[index].addJavaScript({
+                    data: output,
+                    path: outputName
+                    // sourcePath: outputName.
+                });
+            }),
+            allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics),
+            pName = '';
 
-        let allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
         allDiagnostics.forEach(diagnostic => {
-
             let filename = diagnostic.file.fileName,
                 message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
-                index = this._cache.get(filename).index;
-
-            let {
-                line, character
-            } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+                index = this._cache.get(fileArch).get(filename).index,
+                {line, character} = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
 
             // emit error messages
             if (emitResult.emitSkipped) {
-                // stop the meteor app then wait for fixed
+                // stop the meteor app wait for fix
                 files[index].error({
                     message: message,
                     column: character + 1,
@@ -135,10 +137,12 @@ class Compiler {
                 console.info(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
             }
 
-            // removal compilation failed files
-            // so next time it will be compiled again
-            this._cache.delete(filename);
+            if (pName !== filename && pName !== '') {
+                this._cache.get(fileArch).delete(pName);
+            };
+            pName = filename;
         });
+        this._cache.get(fileArch).delete(pName);
 
     }
 }
