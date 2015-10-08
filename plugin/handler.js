@@ -68,7 +68,7 @@ class Compiler {
 
         if (!this._cache.has(_flieArch)) {
             this._cache.set(_flieArch, new Map);
-        };
+        }
 
 
         // check input files find which was modified
@@ -85,16 +85,16 @@ class Compiler {
                     this._cache.get(_flieArch).get(_filePath).hash !== _fileHash) {
                     _complieFiles.push(_filePath);
                 }
-            };
+            }
 
             this._cache.get(_flieArch).set(_filePath, {
                 hash: _fileHash,
                 index: index
             });
-        })
+        });
 
         // exec
-        this._processer(_complieFiles, files, _flieArch)
+        this._processer(_complieFiles, files, _flieArch);
 
         let _msg_2 = msg.Error('222222222222222');
         console.info(_msg_2);
@@ -109,7 +109,7 @@ class Compiler {
         let program = ts.createProgram(fileNames, this._options);
         let emitResult = program.emit(undefined, (outputName, output) => {
                 let index = this._cache.get(fileArch).get(outputName).index;
-                output = output.replace("System.register([", 'System.register("' + outputName + '",[');
+                output = output.replace('System.register([', 'System.register("' + outputName + '",[');
                 files[index].addJavaScript({
                     data: output,
                     path: outputName
@@ -132,14 +132,14 @@ class Compiler {
                     message: message,
                     column: character + 1,
                     line: line + 1
-                })
+                });
             } else {
                 console.info(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
             }
 
             if (pName !== filename && pName !== '') {
                 this._cache.get(fileArch).delete(pName);
-            };
+            }
             pName = filename;
         });
         this._cache.get(fileArch).delete(pName);
