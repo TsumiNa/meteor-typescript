@@ -24,11 +24,11 @@ class Compiler {
             module: ts.ModuleKind.System
         };
 
-        let options = fse.readJsonSync('.tsrc', {throws: false});
-        if (options === null) {
-            msg[0](' Error when try to use read your \'.tsrc\' file. Will use detault compile options');
+        let options = fse.readJsonSync('tsconfig.json', {throws: false});
+        if (options === null || !_.has(options, 'compilerOptions')) {
+            msg[0](' Can not read your \'tsconfig.json\' file. Will use detault compile options');
         } else {
-            this.parser(options);
+            this.parser(options.compilerOptions);
         }
 
         // starting message
@@ -103,8 +103,35 @@ class Compiler {
     }
 
     parser(inputOptins){
+        // can use none module
+        if (_.has(inputOptins, 'module')){
+            if(inputOptins.module === 'None'){
+                this.options.module = 0;
+            }
+        }
+
+        // don't use user sourceMap configuration
+        if (_.has(inputOptins, 'sourceMap')){
+            delete inputOptins.sourceMap;
+        }
+
+        // noEmit
+        if (_.has(inputOptins, 'noEmit')){
+            delete inputOptins.noEmit;
+        }
+        
+        // noLib
+        if (_.has(inputOptins, 'noLib')){
+            delete inputOptins.noLib;
+        }
+
+        // watch
+        if (_.has(inputOptins, 'watch')){
+            delete inputOptins.watch;
+        }
+
         _.extendOwn(this.options, _.pick(inputOptins, (value) => {
-            return _.isBoolean(value);
+            return _.isBoolean(value) || _.isNumber(value);
         }));
     }
 }
