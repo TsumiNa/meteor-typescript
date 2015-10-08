@@ -31,7 +31,18 @@ $ meteor add tsumina:meteor-typescript
 
 ## Usage
 
-TODO
+On initialization, compiler will try to read compile options from `tsconfig.json` which is in your root directory. If failed, will use dafault options instead.
+- default options
+```json
+"compilerOptions": {
+    "noEmitOnError": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "jsx": "react",
+    "target": "ES5",
+    "module": "system"
+}
+```
 
 
 ## SystemJS API

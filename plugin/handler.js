@@ -1,3 +1,4 @@
+/* global process */
 /* global msg */
 /* global Npm */
 const ts = Npm.require('typescript');
@@ -26,7 +27,7 @@ class Compiler {
 
         let options = fse.readJsonSync('tsconfig.json', {throws: false});
         if (options === null || !_.has(options, 'compilerOptions')) {
-            msg[0](' Can not read your \'tsconfig.json\' file. Will use detault compile options');
+            msg[0](' Cannot read your \'tsconfig.json\' file. Will use default compile options');
         } else {
             this.parser(options.compilerOptions);
         }
