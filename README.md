@@ -87,7 +87,7 @@ Full SystemJS API docs can be found [on their Github repo](https://github.com/sy
 
 ### Roadmap
 
-- [*] Support TypeCheck 
+- [x] Support TypeCheck 
 - [ ] examples for usage
 - [ ] Improve README
 - [ ] Full tests coverage

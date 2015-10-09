@@ -18,6 +18,8 @@ class Compiler {
         this.cache = new Map; // cacheing compiled files
         this.options = this.options || {
             noEmitOnError: false,
+            inlineSourceMap: true,
+            sourceMap: true,
             emitDecoratorMetadata: true,
             experimentalDecorators: true,
             jsx: ts.JsxEmit.React,
@@ -25,7 +27,9 @@ class Compiler {
             module: ts.ModuleKind.System
         };
 
-        let options = fse.readJsonSync('tsconfig.json', {throws: false});
+        let options = fse.readJsonSync('tsconfig.json', {
+            throws: false
+        });
         if (options === null || !_.has(options, 'compilerOptions')) {
             msg[0](' Cannot read your \'tsconfig.json\' file. Will use default compile options');
         } else {
@@ -66,13 +70,59 @@ class Compiler {
         this.processer(complieFiles, files, flieArch);
     }
 
-    processer(fileNames, files, fileArch) {
+    createCompilerHost(fileArch){
+        return {
+            getSourceFile,
+            getDefaultLibFileName: () => 'lib.d.ts',
+            writeFile,
+            getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
+            getCanonicalFileName: fileName => ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase(),
+            getNewLine: () => ts.sys.newLine,
+            useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
+            fileExists,
+            readFile,
+            resolveModuleNames
+        };
 
-        let program = ts.createProgram(fileNames, this.options);
-        let emitResult = program.emit(undefined, (outputName, output) => {
-            let filePath = outputName.replace('.js', '');
+        function writeFile(fileName, content){
+            // content = '(function(){' + content + '}).call(this);';
+            console.log(fileName);
+            ts.sys.writeFile(fileName, content);
+        }
+
+        function fileExists(fileName){
+            return ts.sys.fileExists(fileName);
+        }
+
+        function readFile(fileName){
+            return ts.sys.readFile(fileName);
+        }
+
+        function getSourceFile(fileName, languageVersion) {
+            const sourceText = ts.sys.readFile(fileName);
+            return sourceText !== undefined ? ts.createSourceFile(fileName, sourceText, languageVersion) : undefined;
+        }
+
+        function resolveModuleNames(moduleNames, containingFile) {
+            return moduleNames.map(moduleName => {
+                // try to use standard resolution
+                let result = ts.resolveModuleName(moduleName, containingFile, this.options, {
+                    fileExists, readFile
+                });
+                if (result.resolvedModule) {
+                    return result.resolvedModule;
+                }
+                return undefined;
+            });
+        }
+    }
+
+    processer(fileNames, files, fileArch) {
+        const program = ts.createProgram(fileNames, this.options, this.createCompilerHost(fileArch));
+        const emitResult = program.emit(undefined, (outputName, output) => {
+            // let filePath = outputName.replace('.js', '');
             // let _index = this.cache.get(fileArch).get(filePath).index;
-            output = output.replace('System.register([', 'System.register("' + filePath + '",[');
+            // output = output.replace('System.register([', 'System.register("' + filePath + '",[');
             files[0].addJavaScript({
                 data: output,
                 path: outputName
@@ -80,12 +130,12 @@ class Compiler {
             });
         });
 
-        let allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+        const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
         allDiagnostics.forEach(diagnostic => {
             let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
             let {
-                    line, character
-                } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+                line, character
+            } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
 
             // emit error messages
             if (emitResult.emitSkipped) {
@@ -103,31 +153,31 @@ class Compiler {
         });
     }
 
-    parser(inputOptins){
+    parser(inputOptins) {
         // can use none module
-        if (_.has(inputOptins, 'module')){
-            if(inputOptins.module === 'None'){
+        if (_.has(inputOptins, 'module')) {
+            if (inputOptins.module === 'None') {
                 this.options.module = 0;
             }
         }
 
         // don't use user sourceMap configuration
-        if (_.has(inputOptins, 'sourceMap')){
+        if (_.has(inputOptins, 'sourceMap')) {
             delete inputOptins.sourceMap;
         }
 
         // noEmit
-        if (_.has(inputOptins, 'noEmit')){
+        if (_.has(inputOptins, 'noEmit')) {
             delete inputOptins.noEmit;
         }
-        
+
         // noLib
-        if (_.has(inputOptins, 'noLib')){
+        if (_.has(inputOptins, 'noLib')) {
             delete inputOptins.noLib;
         }
 
         // watch
-        if (_.has(inputOptins, 'watch')){
+        if (_.has(inputOptins, 'watch')) {
             delete inputOptins.watch;
         }
 
