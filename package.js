@@ -25,7 +25,7 @@ Package.onUse(function(api) {
 
 Package.registerBuildPlugin({
     name: 'typescript',
-    use: ['ecmascript'],
+    use: ['ecmascript@0.1.5'],
     sources: [
         'lib/utils.js',
         'plugin/handler.js'
