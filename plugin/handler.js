@@ -3,7 +3,7 @@
 /* global Npm */
 const ts = Npm.require('typescript');
 const fse = Npm.require('fs-extra');
-const _ = Npm.require('underscore');
+const _ = Npm.require('lodash');
 
 Plugin.registerCompiler({
     extensions: ['d.ts', 'ts', 'tsx'],
@@ -22,18 +22,18 @@ class Compiler {
             experimentalDecorators: true,
             jsx: ts.JsxEmit.React,
             target: ts.ScriptTarget.ES5,
-            module: ts.ModuleKind.System
+            module: ts.ModuleKind.None
         };
 
         let options = fse.readJsonSync('tsconfig.json', {throws: false});
         if (options === null || !_.has(options, 'compilerOptions')) {
-            msg[0](' Cannot read your \'tsconfig.json\' file. Will use default compile options');
+            msg[0](' Cannot read your \'tsconfig.json\' file. Will use default compiler options');
         } else {
-            this.parser(options.compilerOptions);
+            this.parserOptions(options.compilerOptions);
         }
 
         // starting message
-        msg[2](' Typescript Compiler is running on: ' + process.cwd());
+        msg[2](' Using Typescript Compiler......         ');
     }
 
     // override
@@ -103,11 +103,18 @@ class Compiler {
         });
     }
 
-    parser(inputOptins){
+    parserOptions(inputOptins){
         // can use none module
         if (_.has(inputOptins, 'module')){
-            if(inputOptins.module === 'None'){
+            let module = inputOptins.module.toLowerCase();
+            if(module === 'none'){
                 this.options.module = 0;
+            } else if(module === 'system') {
+                this.options.module = 4;
+            } else if(module === 'amd') {
+                this.options.module = 2;
+            } else {
+                msg[0](' Cannot use \"module\": \"' + inputOptins.module + '\" option, \"module\" will be set to \"None\"');
             }
         }
 
@@ -131,7 +138,7 @@ class Compiler {
             delete inputOptins.watch;
         }
 
-        _.extendOwn(this.options, _.pick(inputOptins, (value) => {
+        _.assign(this.options, _.pick(inputOptins, (value) => {
             return _.isBoolean(value) || _.isNumber(value);
         }));
     }

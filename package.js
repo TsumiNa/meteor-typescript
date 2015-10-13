@@ -1,7 +1,7 @@
 /* global Package */
 Package.describe({
     name: 'tsumina:meteor-typescript',
-    version: '0.2.0',
+    version: '0.2.1',
     // Brief, one-line summary of the package.
     summary: 'A configurable typescript compiler to transform .ts files to .js to use it both side',
     // URL to the Git repository containing the source code for this package.
@@ -14,13 +14,6 @@ Package.describe({
 Package.onUse(function(api) {
     api.versionsFrom('1.2.0.2');
     api.use('isobuild:compiler-plugin@1.0.0');
-    api.use('promise');
-    api.addFiles('lib/require.js', 'server');
-    api.addFiles([
-        'lib/system-polyfills.src.js',
-        'lib/system.src.js'
-    ]);
-
 });
 
 Package.registerBuildPlugin({
@@ -34,7 +27,7 @@ Package.registerBuildPlugin({
         'typescript': '1.6.2',
         'chalk': '1.1.1',
         'fs-extra': '0.24.0',
-        'underscore': '1.8.3'
+        'lodash': '3.10.1'
     }
 });
 
