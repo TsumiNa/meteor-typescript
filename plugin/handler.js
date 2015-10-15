@@ -3,8 +3,8 @@
 /* global Npm */
 const ts = Npm.require('typescript');
 const fse = Npm.require('fs-extra');
-const _ = Npm.require('underscore');
-
+const _ = Npm.require('lodash');
+var debug = Npm.require('debug')('ts:debug:');
 Plugin.registerCompiler({
     extensions: ['d.ts', 'ts', 'tsx'],
     filenames: []
@@ -12,125 +12,98 @@ Plugin.registerCompiler({
     return new Compiler();
 });
 
-
 class Compiler {
     constructor() {
-        this.cache = new Map; // cacheing compiled files
+        this.cache = new Map;
+        this.complieFiles = [];
+        this.emitSkipped = false;
         this.options = this.options || {
             noEmitOnError: false,
-            inlineSourceMap: true,
             sourceMap: true,
             emitDecoratorMetadata: true,
             experimentalDecorators: true,
             jsx: ts.JsxEmit.React,
             target: ts.ScriptTarget.ES5,
-            module: ts.ModuleKind.System
+            module: ts.ModuleKind.None
         };
 
         let options = fse.readJsonSync('tsconfig.json', {
             throws: false
         });
         if (options === null || !_.has(options, 'compilerOptions')) {
-            msg[0](' Cannot read your \'tsconfig.json\' file. Will use default compile options');
+            msg[0](' Cannot read your \'tsconfig.json\' file. Will use default compiler options');
         } else {
-            this.parser(options.compilerOptions);
+            this.parserOptions(options.compilerOptions);
         }
 
+        // init language services
+        this.services = this.createServices();
+
         // starting message
-        msg[2](' Typescript Compiler is running on: ' + process.cwd());
+        msg[2](' Using Typescript Compiler......         ');
+    }
+
+    createServices() {
+        // Create the language service host to allow the LS to communicate with the host
+        const servicesHost = {
+            getScriptFileNames: () => this.complieFiles,
+            getScriptVersion: (fileName) => this.cache.get(fileName) !== undefined ? this.cache.get(fileName).version : 'const',
+            getScriptSnapshot: (fileName) => ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName)),
+            getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
+            getCompilationSettings: () => this.options,
+            getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options),
+        };
+
+        return ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
     }
 
     // override
     processFilesForTarget(files) {
-
-        let complieFiles = [],
-            flieArch = files[0].getArch();
-
-        if (!this.cache.has(flieArch)) {
-            this.cache.set(flieArch, new Map);
-        }
-
-        // check input files find which was modified
+        this.complieFiles = [];
         // push them into `complieFiles`
         files.forEach((file, index) => {
-            let filePath = file.getPathInPackage(),
-                fileHash = file.getSourceHash(),
-                fileExtension = file.getExtension();
-
-            this.cache.get(flieArch).set(filePath, {
-                hash: fileHash,
-                index: index,
-                extension: fileExtension
+            this.cache.set(file.getPathInPackage(), {
+                version: file.getSourceHash(),
+                error: e => file.error(e),
+                addJavaScript: f => file.addJavaScript(f),
+                extension: file.getExtension()
             });
-
-            complieFiles.push(filePath);
+            this.complieFiles.push(file.getPathInPackage());
         });
 
         // exec
-        this.processer(complieFiles, files, flieArch);
+        this.complieFiles.forEach(file => {
+            this.emitFile(file);
+        })
+
+        // logErrors
+        this.logErrors();
     }
 
-    createCompilerHost(fileArch){
-        return {
-            getSourceFile,
-            getDefaultLibFileName: () => 'lib.d.ts',
-            writeFile,
-            getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
-            getCanonicalFileName: fileName => ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase(),
-            getNewLine: () => ts.sys.newLine,
-            useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
-            fileExists,
-            readFile,
-            resolveModuleNames
-        };
+    emitFile(file) {
+        debug('Emit Files: %j', file);
+        let output = this.services.getEmitOutput(file);
 
-        function writeFile(fileName, content){
-            // content = '(function(){' + content + '}).call(this);';
-            console.log(fileName);
-            ts.sys.writeFile(fileName, content);
+        if (!output.emitSkipped) {
+            if (output.outputFiles[0] !== undefined) {
+                this.cache.get(file).addJavaScript({
+                    data: output.outputFiles[1].text,
+                    path: output.outputFiles[1].name,
+                    sourceMap: output.outputFiles[0].text,
+                    bare: true
+                })
+            }
+            return;
         }
-
-        function fileExists(fileName){
-            return ts.sys.fileExists(fileName);
-        }
-
-        function readFile(fileName){
-            return ts.sys.readFile(fileName);
-        }
-
-        function getSourceFile(fileName, languageVersion) {
-            const sourceText = ts.sys.readFile(fileName);
-            return sourceText !== undefined ? ts.createSourceFile(fileName, sourceText, languageVersion) : undefined;
-        }
-
-        function resolveModuleNames(moduleNames, containingFile) {
-            return moduleNames.map(moduleName => {
-                // try to use standard resolution
-                let result = ts.resolveModuleName(moduleName, containingFile, this.options, {
-                    fileExists, readFile
-                });
-                if (result.resolvedModule) {
-                    return result.resolvedModule;
-                }
-                return undefined;
-            });
-        }
+        this.emitSkipped = true;
     }
 
-    processer(fileNames, files, fileArch) {
-        const program = ts.createProgram(fileNames, this.options, this.createCompilerHost(fileArch));
-        const emitResult = program.emit(undefined, (outputName, output) => {
-            // let filePath = outputName.replace('.js', '');
-            // let _index = this.cache.get(fileArch).get(filePath).index;
-            // output = output.replace('System.register([', 'System.register("' + filePath + '",[');
-            files[0].addJavaScript({
-                data: output,
-                path: outputName
-                // sourcePath: outputName.
-            });
-        });
+    logErrors() {
+        let program = this.services.getProgram();
+        let allDiagnostics = this.services.getCompilerOptionsDiagnostics()
+            .concat(program.getSyntacticDiagnostics())
+            .concat(program.getSemanticDiagnostics());
 
-        const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
         allDiagnostics.forEach(diagnostic => {
             let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
             let {
@@ -138,26 +111,32 @@ class Compiler {
             } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
 
             // emit error messages
-            if (emitResult.emitSkipped) {
+            if (this.emitSkipped) {
                 // stop the meteor app wait for fix
-                let index = this.cache.get(fileArch).get(diagnostic.file.fileName).index;
-                files[index].error({
+                this.cache.get(diagnostic.file.fileName).error({
                     message: message,
                     column: character + 1,
                     line: line + 1
                 });
-            } else {
-                let category = diagnostic.category;
-                msg[category](` [${diagnostic.file.fileName}](${line + 1},${character + 1}): ${message}`);
+                return;
             }
+            let category = diagnostic.category;
+            msg[category](` [${diagnostic.file.fileName}](${line + 1},${character + 1}): ${message}`);
         });
     }
 
-    parser(inputOptins) {
+    parserOptions(inputOptins) {
         // can use none module
         if (_.has(inputOptins, 'module')) {
-            if (inputOptins.module === 'None') {
+            let module = inputOptins.module.toLowerCase();
+            if (module === 'none') {
                 this.options.module = 0;
+            } else if (module === 'system') {
+                this.options.module = 4;
+            } else if (module === 'amd') {
+                this.options.module = 2;
+            } else {
+                msg[0](' Cannot use \"module\": \"' + inputOptins.module + '\" option, \"module\" will be set to \"None\"');
             }
         }
 
@@ -181,7 +160,7 @@ class Compiler {
             delete inputOptins.watch;
         }
 
-        _.extendOwn(this.options, _.pick(inputOptins, (value) => {
+        _.assign(this.options, _.pick(inputOptins, (value) => {
             return _.isBoolean(value) || _.isNumber(value);
         }));
     }

@@ -12,29 +12,35 @@
 ## Use typescript with ES6 modules loader on both side!
 
 **This package add new file extensions: `*.ts` `*.tsx` `*.d.ts`.**
-**This package adds SystemJS Module Loader to your project.**
 
-All `*.tsx?` files will be compiled to `*.js` and bundld with your Meteor app. They won't get executed until you request them. Thanks for the **SystenJS Module Loader**, you can use `import` and `export` syntax on both client/server side.
+All `*.tsx?` files will be compiled to `*.js` and bundld with your Meteor app. They won't get executed until you request them.
 
 This package is not bundle with any ts definiton files. As a alternative, you can use `tsd` cli to manage you definition files. For that which are not managed by the `tsd` or outdated, you must find/make it yourself. Because `*.d.ts` files are also watch by the meteor watch system, just use it like a normal source file. TS Compiler will not compile definition to `*.js`.
 ![tsd](https://lh4.googleusercontent.com/-vSEr__evlSo/VhdqifeHwPI/AAAAAAAAc5Q/0lIJ5H1-jgk/w196-h734-no/Untitled%2Bpicture.png)
 
 Meteor definiton flies can be found here [Meteor TypeScript libraries](https://github.com/meteor-typescript/meteor-typescript-libs)
 
-You can combind this with other systemjs required packages like [meteor-aurelia](https://github.com/TsumiNa/meteor-aurelia).
+You can use this with module system required framework like [meteor-aurelia](https://github.com/TsumiNa/meteor-aurelia).
 
-**This package use [typescript@1.6.2](https://github.com/Microsoft/TypeScript/releases/tag/v1.6.2) and [systemjs@0.19.3](https://github.com/systemjs/systemjs/releases/tag/0.19.3)**
-
-See detail about [TypeScript](https://github.com/Microsoft/TypeScript), [SystemJS](https://github.com/systemjs/systemjs) and [tsd](https://github.com/DefinitelyTyped/tsd).
+**This package use [typescript@1.6.2](https://github.com/Microsoft/TypeScript/releases/tag/v1.6.2).** See detail about [TypeScript](https://github.com/Microsoft/TypeScript).
 
 ## Change Log
 
-1. **[*breaking change*]** Now systemjs loader is bundle with this package, you have no need to add `meteor-systemjs` package anymore, just remove it.
+#### 0.2.1
+- **[*breaking change*]** Unbundle with systemjs es6 loader. If you need that, please use `tsumina:meteor-systemjs`
+```bash
+$ meteor add tsumina:meteor-systemjs
+```
+- **[*breaking change*]** Use `"module": "None"` For default.
+- Change message text.
+
+#### 0.2.0
+- **[*breaking change*]** Now systemjs es6 loader is bundle with this package, you have no need to add `meteor-systemjs` package anymore, just remove it.
 ```bash
 $ meteor remove tsumina:meteor-systemjs
 ```
-2. Error will raise informations for you
-3. `tsconfig.json` supported 
+- Error will raise informations for you
+- `tsconfig.json` supported 
 
 
 ## Installation
@@ -70,7 +76,7 @@ On initialization, compiler will try to read compile options from `tsconfig.json
     "module": "system"
 }
 ```
-You can use most of the boolean options except `sourceMap` `noEmit` `noLib` and `watch`. Beside these you also can set `module`, but only two choices are available. **`"module": "none"` means no module system and others equal to `"module": "system"`**.
+You can use most of the boolean options except `sourceMap` `noEmit` `noLib` and `watch`. Beside these you also can set `module`, but only two choices are available. `"module": "none"` means no module system and others equal to `"module": "system"`. **By dafault is `"module": "none"`**.
 
 Compiler will running a typechecker on all source files and output errors. Since meteor system suggest to fix all the errors before next run but sometimes a reference error is not a problem for user. **You can determining how to treat with errors via `"noEmitOnError"` option**. By default this set to `false` will only raise the error information on the console but do not interrupt the app running. If have errors you will see something like this:
 ![noEmitOnError: false](https://lh5.googleusercontent.com/-UbRcZixqcwg/VhdUWxs7TzI/AAAAAAAAc4U/U5FuR59xGNk/w807-h361-no/2015-10-09%2B12.48.01.png)
