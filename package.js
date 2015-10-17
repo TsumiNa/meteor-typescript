@@ -1,7 +1,7 @@
 /* global Package */
 Package.describe({
     name: 'tsumina:meteor-typescript',
-    version: '0.3.0',
+    version: '0.3.1',
     // Brief, one-line summary of the package.
     summary: 'A configurable typescript compiler to transform .ts files to .js to use it both side',
     // URL to the Git repository containing the source code for this package.
