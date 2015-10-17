@@ -54,7 +54,7 @@ $ meteor add tsumina:meteor-typescript
 
 ## Usage
 
-Here is a [example](https://github.com/TsumiNa/meteor-typescript/example) use typescript port of meteor offical tutorial
+Here is a [example](https://github.com/TsumiNa/meteor-typescript/tree/master/example) use typescript port of meteor offical tutorial
 
 
 Assume you have never been used typescript:
