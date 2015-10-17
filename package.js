@@ -1,9 +1,9 @@
 /* global Package */
 Package.describe({
     name: 'tsumina:meteor-typescript',
-    version: '0.3.3',
+    version: '0.3.4',
     // Brief, one-line summary of the package.
-    summary: 'A configurable typescript compiler to transform .ts files to .js to use it both side',
+    summary: 'A configurable typescript compiler for transpiler .ts files to .js and use it both side',
     // URL to the Git repository containing the source code for this package.
     git: 'https://github.com/TsumiNa/meteor-typescript',
     // By default, Meteor will default to using README.md for documentation.

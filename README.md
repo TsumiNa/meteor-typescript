@@ -83,18 +83,21 @@ On initialization, compiler will try to read compile options from `tsconfig.json
     "module": "none"
 }
 ```
-You can use most of the boolean options except `sourceMap` `noEmit` `noLib` `declaration`and `watch`. Beside these you also can set `module`, `system` `amd` are available. To use module system, you must add [meteor-systemjs](https://github.com/TsumiNa/meteor-systemjs) package to your meteor app.
+You can use most of the boolean options except `sourceMap`, `noEmit`, `noLib`, `declaration` and `watch`. Beside these you also can set `module`, `system` and `amd` are available. To use module system, you must add [meteor-systemjs](https://github.com/TsumiNa/meteor-systemjs) package to your meteor app.
 ```bash
 $ meteor add tsumina:meteor-systemjs
 ```
 
-**By dafault no module system will be used**.
+**By dafault, no module system will be used**.
 
 Compiler will running a typechecker on all source files and output errors. Since meteor system suggest to fix all the errors before next run but sometimes a reference error is not a problem for user. **You can determining how to treat with errors via `"noEmitOnError"` option**. By default this set to `false` will only raise the error information on the console but do not interrupt the app running. If have errors you will see something like this:
 ![noEmitOnError: false](https://lh5.googleusercontent.com/-UbRcZixqcwg/VhdUWxs7TzI/AAAAAAAAc4U/U5FuR59xGNk/w807-h361-no/2015-10-09%2B12.48.01.png)
 
-If set to `"noEmitOnError": true`, you must fix all the errors before next run. like this:
+If set to `"noEmitOnError": true`, you must fix all the errors before next run.
 ![noEmitOnError: true](https://lh6.googleusercontent.com/-4HFtr8yZyUc/VhdUWVCaOkI/AAAAAAAAc4Q/QxS8MAq_UyU/w807-h360-no/2015-10-09%2B12.50.58.png)
+
+**Notice**
+> *If there are fatal errors in your codes, compiler will down and throw errors. For this case, you must fix the errors whatever the compiler option is.*
 
 
 ### Roadmap

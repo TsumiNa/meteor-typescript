@@ -57,7 +57,6 @@ class Compiler {
             msg[0](' No \'tsconfig.json\' file be found. Will use default compiler options');
             fse.removeSync('tsconfig.json');
         } else {
-
             let options = fse.readJsonSync('tsconfig.json', {
                 throws: false
             });
