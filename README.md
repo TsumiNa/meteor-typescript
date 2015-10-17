@@ -88,7 +88,7 @@ You can use most of the boolean options except `sourceMap`, `noEmit`, `noLib`, `
 $ meteor add tsumina:meteor-systemjs
 ```
 
-**By dafault, no module system will be used**.
+**By default, no module system will be used**.
 
 Compiler will running a typechecker on all source files and output errors. Since meteor system suggest to fix all the errors before next run but sometimes a reference error is not a problem for user. **You can determining how to treat with errors via `"noEmitOnError"` option**. By default this set to `false` will only raise the error information on the console but do not interrupt the app running. If have errors you will see something like this:
 ![noEmitOnError: false](https://lh5.googleusercontent.com/-UbRcZixqcwg/VhdUWxs7TzI/AAAAAAAAc4U/U5FuR59xGNk/w807-h361-no/2015-10-09%2B12.48.01.png)
