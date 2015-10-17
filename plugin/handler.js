@@ -53,12 +53,19 @@ class Compiler {
          * init compiler options
          */
         fse.ensureFileSync('tsconfig.json');
-        let options = fse.readJsonSync('tsconfig.json');
-        if (options === null || !_.has(options, 'compilerOptions')) {
-            msg[0](' Cannot read your \'tsconfig.json\' file. Will use default compiler options');
+        if (fse.readFileSync('tsconfig.json', 'utf8').length === 0) {
+            msg[0](' No \'tsconfig.json\' file be found. Will use default compiler options');
             fse.removeSync('tsconfig.json');
         } else {
-            this.parserOptions(options.compilerOptions);
+
+            let options = fse.readJsonSync('tsconfig.json', {
+                throws: false
+            });
+            if (options === null || !_.has(options, 'compilerOptions')) {
+                msg[0](' Cannot read your \'tsconfig.json\' file. Will use default compiler options');
+            } else {
+                this.parserOptions(options.compilerOptions);
+            }
         }
 
         /**
