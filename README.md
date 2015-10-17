@@ -54,6 +54,9 @@ $ meteor add tsumina:meteor-typescript
 
 ## Usage
 
+Here is a [example](https://github.com/TsumiNa/meteor-typescript/example) use typescript port of meteor offical tutorial
+
+
 Assume you have never been used typescript:
 ```bash
 $ npm i -g typescript  # install typescript globally
