@@ -12,19 +12,21 @@
 ## Use typescript with ES6 modules loader on both side!
 
 **This package add new file extensions: `*.ts` `*.tsx` `*.d.ts`.**
+**This package use [typescript@1.6.2](https://github.com/Microsoft/TypeScript/releases/tag/v1.6.2).** See detail about [TypeScript](https://github.com/Microsoft/TypeScript).
 
-All `*.tsx?` files will be compiled to `*.js` and bundld with your Meteor app. They won't get executed until you request them.
+All `*.tsx?` files will be compiled to `*.js` and bundld with your Meteor app. Also you can use it with module load system, See detail about [meteor-systemjs](https://github.com/TsumiNa/meteor-systemjs).
 
 This package is not bundle with any ts definiton files. As a alternative, you can use `tsd` cli to manage you definition files. For that which are not managed by the `tsd` or outdated, you must find/make it yourself. Because `*.d.ts` files are also watch by the meteor watch system, just use it like a normal source file. TS Compiler will not compile definition to `*.js`.
 ![tsd](https://lh4.googleusercontent.com/-vSEr__evlSo/VhdqifeHwPI/AAAAAAAAc5Q/0lIJ5H1-jgk/w196-h734-no/Untitled%2Bpicture.png)
 
 Meteor definiton flies can be found here [Meteor TypeScript libraries](https://github.com/meteor-typescript/meteor-typescript-libs)
 
-You can use this with module system required framework like [meteor-aurelia](https://github.com/TsumiNa/meteor-aurelia).
-
-**This package use [typescript@1.6.2](https://github.com/Microsoft/TypeScript/releases/tag/v1.6.2).** See detail about [TypeScript](https://github.com/Microsoft/TypeScript).
 
 ## Change Log
+
+#### 0.3.0
+- **Incremental building supported**
+- When you use module system such as `system` and `amd`, there will no closure surround your codes.
 
 #### 0.2.1
 - **[*breaking change*]** Unbundle with systemjs es6 loader. If you need that, please use `tsumina:meteor-systemjs`
@@ -69,14 +71,21 @@ On initialization, compiler will try to read compile options from `tsconfig.json
 ```json
 "compilerOptions": {
     "noEmitOnError": false,
+    "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "declaration": false,
     "jsx": "react",
     "target": "ES5",
-    "module": "system"
+    "module": "none"
 }
 ```
-You can use most of the boolean options except `sourceMap` `noEmit` `noLib` and `watch`. Beside these you also can set `module`, but only two choices are available. `"module": "none"` means no module system and others equal to `"module": "system"`. **By dafault is `"module": "none"`**.
+You can use most of the boolean options except `sourceMap` `noEmit` `noLib` `declaration`and `watch`. Beside these you also can set `module`, `system` `amd` are available. To use module system, you must add [meteor-systemjs](https://github.com/TsumiNa/meteor-systemjs) package to your meteor app.
+```bash
+$ meteor add tsumina:meteor-systemjs
+```
+
+**By dafault no module system will be used**.
 
 Compiler will running a typechecker on all source files and output errors. Since meteor system suggest to fix all the errors before next run but sometimes a reference error is not a problem for user. **You can determining how to treat with errors via `"noEmitOnError"` option**. By default this set to `false` will only raise the error information on the console but do not interrupt the app running. If have errors you will see something like this:
 ![noEmitOnError: false](https://lh5.googleusercontent.com/-UbRcZixqcwg/VhdUWxs7TzI/AAAAAAAAc4U/U5FuR59xGNk/w807-h361-no/2015-10-09%2B12.48.01.png)
@@ -85,15 +94,10 @@ If set to `"noEmitOnError": true`, you must fix all the errors before next run. 
 ![noEmitOnError: true](https://lh6.googleusercontent.com/-4HFtr8yZyUc/VhdUWVCaOkI/AAAAAAAAc4Q/QxS8MAq_UyU/w807-h360-no/2015-10-09%2B12.50.58.png)
 
 
-
-## SystemJS API
-
-Full SystemJS API docs can be found [on their Github repo](https://github.com/systemjs/systemjs/blob/master/docs/system-api.md)
-
-
 ### Roadmap
 
 - [x] Support TypeCheck 
+- [x] Incremental building support
 - [ ] examples for usage
 - [ ] Improve README
 - [ ] Full tests coverage

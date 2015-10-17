@@ -42,7 +42,6 @@ class Compiler {
             sourceMap: true,
             emitDecoratorMetadata: true,
             experimentalDecorators: true,
-            isolatedModules: false,
             allowNonTsExtensions: true,
             declaration: false,
             jsx: ts.JsxEmit.React,
@@ -69,8 +68,12 @@ class Compiler {
         this.cache['server'] = new Map;
         this.services['web.browser'] = this.createServices('web.browser');
         this.cache['web.browser'] = new Map;
+        fse.ensureFileSync('.meteor/platforms');
         let platforms = fse.readFileSync('.meteor/platforms', 'utf8');
-        if (platforms.search('ios') !== -1 || platforms.search('android') !== -1) {
+        if (platforms.length === 0) {
+            msg[1](' Cannot read your \'platforms\' file.');
+            fse.removeSync('.meteor/platforms');
+        } else if (platforms.search('ios') !== -1 || platforms.search('android') !== -1) {
             this.services['web.cordova'] = this.createServices('web.cordova');
             this.cache['web.cordova'] = new Map;
         }
@@ -104,31 +107,41 @@ class Compiler {
 
         files.forEach(file => {
             let fileName = file.getPathInPackage();
-            let hash = file.getSourceHash();
 
             // push new files into `hostFiles`
             this.hostFiles[arch].push(fileName);
 
+            // d.ts files exclude
+            if (file.getExtension() === 'd.ts') return;
+
+            // check changed files
+            let hash = file.getSourceHash();
             if (!this.cache[arch].has(fileName)) {
 
                 // mark file as need compile
                 compileFiles.push(fileName);
                 this.cache[arch].set(fileName, {
-                    version: hash,
-                    // extension: file.getExtension(),
+                    version: hash + 'tmp',
+                    code: undefined,
+                    map: undefined,
+                    error: e => file.error(e),
+                    addJavaScript: f => file.addJavaScript(f)
+                });
+            } else if (this.cache[arch].get(fileName).version !== file.getSourceHash()) {
+                compileFiles.push(fileName);
+                this.cache[arch].set(fileName, {
+                    version: hash + 'tmp',
                     error: e => file.error(e),
                     addJavaScript: f => file.addJavaScript(f)
                 });
             } else {
-                if (this.cache[arch].get(fileName).version !== file.getSourceHash()) {
-                    compileFiles.push(fileName);
-                    this.cache[arch].set(fileName, {
-                        version: hash,
-                        // extension: file.getExtension(),
-                        error: e => file.error(e),
-                        addJavaScript: f => file.addJavaScript(f)
-                    });
-                }
+                // debug('Unchanged Files: %j', fileName)
+                file.addJavaScript({
+                    data: this.cache[arch].get(fileName).code,
+                    path: fileName.replace(/\.tsx?$/, '.js'),
+                    sourceMap: this.cache[arch].get(fileName).map,
+                    bare: this.options.module ? true : false
+                });
             }
         });
 
@@ -144,19 +157,21 @@ class Compiler {
     emitFile(file, arch) {
         // debug('Emit Files: %j', file);
         let output = this.services[arch].getEmitOutput(file);
-        let moduleName = file.replace(/\.tsx?$/, '').replace(/\\/g, '/');
-        if (!output.emitSkipped) {
-            if (output.outputFiles.length > 0) {
-                this.cache[arch].get(file).addJavaScript({
-                    data: output.outputFiles[1].text
-                        .replace("System.register([",'System.register("'+moduleName+'",[')
-                        .replace("define([",'define("'+moduleName+'",['),
-                    path: output.outputFiles[1].name,
-                    sourcePath: file,
-                    sourceMap: output.outputFiles[0].text,
-                    bare: this.options.module ? true : false
-                });
-            }
+        if (!output.emitSkipped && output.outputFiles.length > 0) {
+            let moduleName = file.replace(/\.tsx?$/, '').replace(/\\/g, '/');
+            let code = output.outputFiles[1].text
+                .replace("System.register([", 'System.register("' + moduleName + '",[')
+                .replace("define([", 'define("' + moduleName + '",[');
+            let map = output.outputFiles[0].text;
+            this.cache[arch].get(file).code = code;
+            this.cache[arch].get(file).map = map;
+            this.cache[arch].get(file).version = this.cache[arch].get(file).version.slice(0, -3);
+            this.cache[arch].get(file).addJavaScript({
+                data: code,
+                path: output.outputFiles[1].name,
+                sourceMap: map,
+                bare: this.options.module ? true : false
+            });
         }
     }
 
