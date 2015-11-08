@@ -89,14 +89,37 @@ class Compiler {
     }
 
     createServices(arch) {
+        function fileExists(fileName: string): boolean {
+            return ts.sys.fileExists(fileName);
+        }
+
+        function readFile(fileName: string): string {
+            return ts.sys.readFile(fileName);
+        }
+
         // Create the language service host to allow the LS to communicate with the host
         const servicesHost = {
             getScriptFileNames: () => this.hostFiles[arch],
             getScriptVersion: fileName => this.cache[arch].has(fileName) ? this.cache[arch].get(fileName).version : 'immutable',
-            getScriptSnapshot: fileName => ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName)),
+            getScriptSnapshot: fileName => {
+                // debug('Snapshot File: %j', fileName);
+                return ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName))
+            },
             getCurrentDirectory: () => '/',
             getCompilationSettings: () => this.options,
-            getDefaultLibFileName: options => ts.getDefaultLibFilePath(options)
+            getDefaultLibFileName: options => ts.getDefaultLibFilePath(options),
+            resolveModuleNames: (moduleNames, containingFile) => {
+                return moduleNames.map(moduleName => {
+                    // try to use standard resolution
+                    let result = ts.resolveModuleName(moduleName, containingFile, this.options, {
+                        fileExists, readFile
+                    });
+                    if (result.resolvedModule) {
+                        return result.resolvedModule;
+                    }
+                    return undefined;
+                });
+            }
         };
 
         return ts.createLanguageService(servicesHost, this.documentRegistry);
@@ -123,8 +146,7 @@ class Compiler {
             // check changed files
             let hash = file.getSourceHash();
             if (!this.cache[arch].has(fileName)) {
-
-                // mark file as need compile
+                // debug('Compile new File: %j', fileName);
                 compileFiles.push(fileName);
                 this.cache[arch].set(fileName, {
                     version: hash + 'tmp',
@@ -134,6 +156,7 @@ class Compiler {
                     addJavaScript: f => file.addJavaScript(f)
                 });
             } else if (this.cache[arch].get(fileName).version !== file.getSourceHash()) {
+                // debug('Compile changed File: %j', fileName);
                 compileFiles.push(fileName);
                 this.cache[arch].set(fileName, {
                     version: hash + 'tmp',
@@ -141,7 +164,7 @@ class Compiler {
                     addJavaScript: f => file.addJavaScript(f)
                 });
             } else {
-                // debug('Unchanged Files: %j', fileName)
+                // debug('Unchanged File: %j', fileName)
                 file.addJavaScript({
                     data: this.cache[arch].get(fileName).code,
                     path: fileName.replace(/\.tsx?$/, '.js'),
@@ -161,7 +184,7 @@ class Compiler {
     }
 
     emitFile(file, arch) {
-        // debug('Emit Files: %j', file);
+        // debug('Emit File: %j', file);
         let output = this.services[arch].getEmitOutput(file);
         if (!output.emitSkipped && output.outputFiles.length > 0) {
             let moduleName = file.replace(/\.tsx?$/, '').replace(/\\/g, '/');

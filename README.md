@@ -24,6 +24,10 @@ Meteor definiton flies can be found here [Meteor TypeScript libraries](https://g
 
 ## Change Log
 
+#### 0.4.0
+- **BugFix:** Fix ambient external modules error, it's will cause compiler crash.
+- Update dependences
+
 #### 0.3.0
 - **Incremental building supported**
 - When you use module system such as `system` and `amd`, there will no closure surround your codes.
@@ -54,8 +58,10 @@ $ meteor add tsumina:meteor-typescript
 
 ## Usage
 
-Here is a [example](https://github.com/TsumiNa/meteor-typescript/tree/master/example) use typescript port of meteor offical tutorial
+An [example](https://github.com/TsumiNa/meteor-typescript/tree/master/example) with typescript. It's port of meteor offical tutorial.
+[another one](https://github.com/TsumiNa/aurelia-skeleton-jade/tree/typescript-jade) combined with [meteor-aurelia](https://github.com/TsumiNa/meteor-aurelia)
 
+#### Star from zero
 
 Assume you have never been used typescript:
 ```bash
@@ -104,7 +110,7 @@ If set to `"noEmitOnError": true`, you must fix all the errors before next run.
 
 - [x] Support TypeCheck 
 - [x] Incremental building support
-- [ ] examples for usage
+- [x] examples for usage
 - [ ] Improve README
 - [ ] Full tests coverage
 
