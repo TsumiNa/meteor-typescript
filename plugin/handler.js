@@ -38,6 +38,7 @@ class Compiler {
          * compiler options
          */
         this.options = this.options || {
+            noLib: false,
             noEmitOnError: false,
             sourceMap: true,
             emitDecoratorMetadata: true,
@@ -140,14 +141,10 @@ class Compiler {
             // push new files into `hostFiles`
             this.hostFiles[arch].push(fileName);
 
-            // d.ts files exclude
-            if (file.getExtension() === 'd.ts') return;
-
             // check changed files
             let hash = file.getSourceHash();
             if (!this.cache[arch].has(fileName)) {
                 // debug('Compile new File: %j', fileName);
-                compileFiles.push(fileName);
                 this.cache[arch].set(fileName, {
                     version: hash + 'tmp',
                     code: undefined,
@@ -155,16 +152,26 @@ class Compiler {
                     error: e => file.error(e),
                     addJavaScript: f => file.addJavaScript(f)
                 });
+                // d.ts files exclude
+                if (file.getExtension() === 'd.ts') return;
+                compileFiles.push(fileName);
+
             } else if (this.cache[arch].get(fileName).version !== file.getSourceHash()) {
                 // debug('Compile changed File: %j', fileName);
-                compileFiles.push(fileName);
                 this.cache[arch].set(fileName, {
                     version: hash + 'tmp',
                     error: e => file.error(e),
                     addJavaScript: f => file.addJavaScript(f)
                 });
+
+                // d.ts files exclude
+                if (file.getExtension() === 'd.ts') return;
+                compileFiles.push(fileName);
+
             } else {
                 // debug('Unchanged File: %j', fileName)
+                // d.ts files exclude
+                if (file.getExtension() === 'd.ts') return;
                 file.addJavaScript({
                     data: this.cache[arch].get(fileName).code,
                     path: fileName.replace(/\.tsx?$/, '.js'),
@@ -212,6 +219,10 @@ class Compiler {
 
         allDiagnostics.forEach(diagnostic => {
             let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+            if (diagnostic.file === undefined) {
+                msg[1](` ${message}`);
+                return;
+            }
             let {
                 line, character
             } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
@@ -219,6 +230,7 @@ class Compiler {
             // emit error messages
             if (this.options.noEmitOnError) {
                 // stop the meteor app wait for fix
+                // debug('Emit Error File: %j', diagnostic.file.fileName);
                 this.cache[arch].get(diagnostic.file.fileName).error({
                     message: message,
                     column: character + 1,
@@ -246,6 +258,20 @@ class Compiler {
             }
         }
 
+        // target
+        if (_.has(inputOptins, 'target')) {
+            let target = inputOptins.target.toLowerCase();
+            if (target === 'es3') {
+                this.options.target = ts.ScriptTarget.ES3;
+            } else if (target === 'es5') {
+                this.options.target = ts.ScriptTarget.ES5;
+            } else if (target === 'es6') {
+                this.options.target = ts.ScriptTarget.ES6;
+            } else {
+                msg[0](' Cannot set \"target\" as \"' + inputOptins.target + '\", will use \"ES5\"');
+            }
+        }
+
         // don't use user sourceMap configuration
         if (_.has(inputOptins, 'sourceMap')) {
             delete inputOptins.sourceMap;
@@ -254,11 +280,6 @@ class Compiler {
         // noEmit
         if (_.has(inputOptins, 'noEmit')) {
             delete inputOptins.noEmit;
-        }
-
-        // noLib
-        if (_.has(inputOptins, 'noLib')) {
-            delete inputOptins.noLib;
         }
 
         // declaration

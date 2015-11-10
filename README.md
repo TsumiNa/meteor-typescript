@@ -24,6 +24,11 @@ Meteor definiton flies can be found here [Meteor TypeScript libraries](https://g
 
 ## Change Log
 
+#### 0.5.1
+- **BugFix:** Some definition errors will cause compiler crash.
+- Add `target` compile option support.
+- Add `noLib` compile option support.
+
 #### 0.4.0
 - **BugFix:** Fix ambient external modules error, it's will cause compiler crash.
 - Update dependences
@@ -31,22 +36,6 @@ Meteor definiton flies can be found here [Meteor TypeScript libraries](https://g
 #### 0.3.0
 - **Incremental building supported**
 - When you use module system such as `system` and `amd`, there will no closure surround your codes.
-
-#### 0.2.1
-- **[*breaking change*]** Unbundle with systemjs es6 loader. If you need that, please use `tsumina:meteor-systemjs`
-```bash
-$ meteor add tsumina:meteor-systemjs
-```
-- **[*breaking change*]** Use `"module": "None"` For default.
-- Change message text.
-
-#### 0.2.0
-- **[*breaking change*]** Now systemjs es6 loader is bundle with this package, you have no need to add `meteor-systemjs` package anymore, just remove it.
-```bash
-$ meteor remove tsumina:meteor-systemjs
-```
-- Error will raise informations for you
-- `tsconfig.json` supported 
 
 
 ## Installation
@@ -89,7 +78,7 @@ On initialization, compiler will try to read compile options from `tsconfig.json
     "module": "none"
 }
 ```
-You can use most of the boolean options except `sourceMap`, `noEmit`, `noLib`, `declaration` and `watch`. Beside these you also can set `module`, `system` and `amd` are available. To use module system, you must add [meteor-systemjs](https://github.com/TsumiNa/meteor-systemjs) package to your meteor app.
+You can use most of the boolean options except `sourceMap`, `noEmit`, `declaration` and `watch`. Beside these you also can set `module`, `system` and `amd` are available. To use module system, you must add [meteor-systemjs](https://github.com/TsumiNa/meteor-systemjs) package to your meteor app.
 ```bash
 $ meteor add tsumina:meteor-systemjs
 ```
