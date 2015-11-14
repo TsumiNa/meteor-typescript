@@ -104,7 +104,12 @@ class Compiler {
             getScriptVersion: fileName => this.cache[arch].has(fileName) ? this.cache[arch].get(fileName).version : 'immutable',
             getScriptSnapshot: fileName => {
                 // debug('Snapshot File: %j', fileName);
-                return ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName))
+                try {
+                    var src = fse.readFileSync(fileName, 'utf8')
+                } catch (err) {
+                    throw err
+                }
+                return ts.ScriptSnapshot.fromString(src)
             },
             getCurrentDirectory: () => '/',
             getCompilationSettings: () => this.options,
@@ -218,12 +223,12 @@ class Compiler {
             .concat(program.getSemanticDiagnostics());
 
         allDiagnostics.forEach(diagnostic => {
-            let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+            var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
             if (diagnostic.file === undefined) {
                 msg[1](` ${message}`);
                 return;
             }
-            let {
+            var {
                 line, character
             } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
 
