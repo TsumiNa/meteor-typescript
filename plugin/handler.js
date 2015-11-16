@@ -12,6 +12,20 @@ Plugin.registerCompiler({
     return new Compiler();
 });
 
+function prepareSourceMap(sourceMapContent, fileContent, sourceMapPath, packageName) {
+    let sourceMapJson = JSON.parse(sourceMapContent);
+    sourceMapJson.sourcesContent = [fileContent];
+
+    // if source in a package
+    if (packageName) {
+        sourceMapJson.sources = ['packages/' + sourceMapPath];
+    } else {
+        sourceMapJson.sources = [sourceMapPath];
+    }
+    return sourceMapJson;
+}
+
+
 class Compiler {
     constructor() {
         /**
@@ -159,7 +173,7 @@ class Compiler {
                 });
                 // d.ts files exclude
                 if (file.getExtension() === 'd.ts') return;
-                compileFiles.push(fileName);
+                compileFiles.push(file);
 
             } else if (this.cache[arch].get(fileName).version !== file.getSourceHash()) {
                 // debug('Compile changed File: %j', fileName);
@@ -171,17 +185,19 @@ class Compiler {
 
                 // d.ts files exclude
                 if (file.getExtension() === 'd.ts') return;
-                compileFiles.push(fileName);
+                compileFiles.push(file);
 
             } else {
                 // debug('Unchanged File: %j', fileName)
                 // d.ts files exclude
                 if (file.getExtension() === 'd.ts') return;
                 file.addJavaScript({
+                    type: 'ts',
                     data: this.cache[arch].get(fileName).code,
                     path: fileName.replace(/\.tsx?$/, '.js'),
+                    sourcePath: fileName,
                     sourceMap: this.cache[arch].get(fileName).map,
-                    bare: this.options.module ? true : false
+                    bare: this.options.module !== ts.ModuleKind.None ? true : false
                 });
             }
         });
@@ -196,22 +212,38 @@ class Compiler {
     }
 
     emitFile(file, arch) {
-        // debug('Emit File: %j', file);
-        let output = this.services[arch].getEmitOutput(file);
+        let fileName = file.getPathInPackage();
+        let fileContent = file.getContentsAsString();
+        let packageName = file.getPackageName();
+        // debug('Emit File: %j', fileName);
+        let output = this.services[arch].getEmitOutput(fileName);
         if (!output.emitSkipped && output.outputFiles.length > 0) {
-            let moduleName = file.replace(/\.tsx?$/, '').replace(/\\/g, '/');
+
+            // get transpiled code
+            let moduleName = fileName.replace(/\.tsx?$/, '').replace(/\\/g, '/');
             let code = output.outputFiles[1].text
                 .replace("System.register([", 'System.register("' + moduleName + '",[')
                 .replace("define([", 'define("' + moduleName + '",[');
-            let map = output.outputFiles[0].text;
-            this.cache[arch].get(file).code = code;
-            this.cache[arch].get(file).map = map;
-            this.cache[arch].get(file).version = this.cache[arch].get(file).version.slice(0, -3);
-            this.cache[arch].get(file).addJavaScript({
+            code = code.slice(0, code.lastIndexOf("//#"));
+            this.cache[arch].get(fileName).code = code;
+
+            // get source map
+            let map = prepareSourceMap(
+                output.outputFiles[0].text,
+                fileContent,
+                fileName,
+                packageName);
+            this.cache[arch].get(fileName).map = map;
+
+            // write to js
+            this.cache[arch].get(fileName).version = this.cache[arch].get(fileName).version.slice(0, -3);
+            this.cache[arch].get(fileName).addJavaScript({
+                type: 'ts',
                 data: code,
                 path: output.outputFiles[1].name,
+                sourcePath: fileName,
                 sourceMap: map,
-                bare: this.options.module ? true : false
+                bare: this.options.module !== ts.ModuleKind.None ? true : false
             });
         }
     }
@@ -223,12 +255,12 @@ class Compiler {
             .concat(program.getSemanticDiagnostics());
 
         allDiagnostics.forEach(diagnostic => {
-            var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+            let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
             if (diagnostic.file === undefined) {
                 msg[1](` ${message}`);
                 return;
             }
-            var {
+            let {
                 line, character
             } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
 

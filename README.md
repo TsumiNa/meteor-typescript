@@ -24,6 +24,10 @@ Meteor definiton flies can be found here [Meteor TypeScript libraries](https://g
 
 ## Change Log
 
+#### 0.5.3
+- Improve sourecMap support.
+- Fixed some bugs.
+
 #### 0.5.2
 - Now compiler will throw an `ENOENT` error when referenced definition files are not exist
 
