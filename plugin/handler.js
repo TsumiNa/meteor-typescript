@@ -120,10 +120,11 @@ class Compiler {
                 // debug('Snapshot File: %j', fileName);
                 try {
                     var src = fse.readFileSync(fileName, 'utf8')
+                    return ts.ScriptSnapshot.fromString(src)
                 } catch (err) {
-                    throw err
+                    if (err.code !== 'ENOENT') throw err;
+                    return null;
                 }
-                return ts.ScriptSnapshot.fromString(src)
             },
             getCurrentDirectory: () => '/',
             getCompilationSettings: () => this.options,
@@ -207,16 +208,22 @@ class Compiler {
             this.emitFile(file, arch);
         });
 
-        // logErrors
-        this.logErrors(arch);
+        // diagnostics
+        this.diagnostics(arch);
     }
 
     emitFile(file, arch) {
         let fileName = file.getPathInPackage();
         let fileContent = file.getContentsAsString();
         let packageName = file.getPackageName();
-        // debug('Emit File: %j', fileName);
-        let output = this.services[arch].getEmitOutput(fileName);
+        // debug('Emit File: %j', Date.now());
+        try {
+            var output = this.services[arch].getEmitOutput(fileName);
+        } catch (err) {
+            file.error({
+                message: err.message
+            });
+        }
         if (!output.emitSkipped && output.outputFiles.length > 0) {
 
             // get transpiled code
@@ -248,7 +255,7 @@ class Compiler {
         }
     }
 
-    logErrors(arch) {
+    diagnostics(arch) {
         let program = this.services[arch].getProgram();
         let allDiagnostics = this.services[arch].getCompilerOptionsDiagnostics()
             .concat(program.getSyntacticDiagnostics())

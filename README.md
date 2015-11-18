@@ -17,7 +17,6 @@
 All `*.tsx?` files will be compiled to `*.js` and bundld with your Meteor app. Also you can use it with module load system, See detail about [meteor-systemjs](https://github.com/TsumiNa/meteor-systemjs).
 
 This package is not bundle with any ts definiton files. As a alternative, you can use `tsd` cli to manage you definition files. For that which are not managed by the `tsd` or outdated, you must find/make it yourself. Because `*.d.ts` files are also watch by the meteor watch system, just use it like a normal source file. TS Compiler will not compile definition to `*.js`.
-![tsd](https://lh4.googleusercontent.com/-vSEr__evlSo/VhdqifeHwPI/AAAAAAAAc5Q/0lIJ5H1-jgk/w196-h734-no/Untitled%2Bpicture.png)
 
 Meteor definiton flies can be found here [Meteor TypeScript libraries](https://github.com/meteor-typescript/meteor-typescript-libs)
 
@@ -28,17 +27,10 @@ Meteor definiton flies can be found here [Meteor TypeScript libraries](https://g
 - Improve sourecMap support.
 - Fixed some bugs.
 
-#### 0.5.2
-- Now compiler will throw an `ENOENT` error when referenced definition files are not exist
-
 #### 0.5.1
 - **BugFix:** Some definition errors will cause compiler crash.
 - Add `target` compile option support.
 - Add `noLib` compile option support.
-
-#### 0.4.0
-- **BugFix:** Fix ambient external modules error, it's will cause compiler crash.
-- Update dependences
 
 #### 0.3.0
 - **Incremental building supported**
