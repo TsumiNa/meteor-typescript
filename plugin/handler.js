@@ -25,17 +25,22 @@ class Compiler {
         /**
          * cache for each host
          */
-        this.cache = {};
+        this.cache = new Map;
 
         /**
          * language services
          */
-        this.services = {};
+        this.services = this.createServices();
 
         /**
          * language services host
          */
-        this.hostFiles = {};
+        this.hostFiles = [];
+
+        /**
+         * Source file content
+         */
+        this.srcContents = new Map;
 
         /**
          * shared registry document registry
@@ -76,28 +81,11 @@ class Compiler {
             }
         }
 
-        /**
-         * init language services and cache
-         */
-        this.services['server'] = this.createServices('server');
-        this.cache['server'] = new Map;
-        this.services['web.browser'] = this.createServices('web.browser');
-        this.cache['web.browser'] = new Map;
-        fse.ensureFileSync('.meteor/platforms');
-        let platforms = fse.readFileSync('.meteor/platforms', 'utf8');
-        if (platforms.length === 0) {
-            msg[1](' Cannot read your \'platforms\' file.');
-            fse.removeSync('.meteor/platforms');
-        } else if (platforms.search('ios') !== -1 || platforms.search('android') !== -1) {
-            this.services['web.cordova'] = this.createServices('web.cordova');
-            this.cache['web.cordova'] = new Map;
-        }
-
         // starting message
         msg[2](' Using Typescript Compiler......         ');
     }
 
-    createServices(arch) {
+    createServices() {
         function fileExists(fileName: string): boolean {
             return ts.sys.fileExists(fileName);
         }
@@ -108,19 +96,15 @@ class Compiler {
 
         // Create the language service host to allow the LS to communicate with the host
         const servicesHost = {
-            getScriptFileNames: () => this.hostFiles[arch],
-            getScriptVersion: fileName => this.cache[arch].has(fileName) ? this.cache[arch].get(fileName).version : 'immutable',
+            getScriptFileNames: () => this.hostFiles,
+            getScriptVersion: fileName => this.cache.has(fileName) ? this.cache.get(fileName).version : 'immutable',
             getScriptSnapshot: fileName => {
                 // debug('Snapshot File: %j', fileName);
-                try {
-                    var src = fse.readFileSync(fileName, 'utf8')
-                    return ts.ScriptSnapshot.fromString(src)
-                } catch (err) {
-                    if (err.code !== 'ENOENT') throw err;
-                    return null;
-                }
+                let src = this.srcContents.get(fileName);
+                if (src !== undefined) return ts.ScriptSnapshot.fromString(src);
+                return undefined;
             },
-            getCurrentDirectory: () => '/',
+            getCurrentDirectory: () => process.cwd() + '/',
             getCompilationSettings: () => this.options,
             getDefaultLibFileName: options => ts.getDefaultLibFilePath(options),
             resolveModuleNames: (moduleNames, containingFile) => {
@@ -142,44 +126,54 @@ class Compiler {
 
     // override
     processFilesForTarget(files) {
+        this.hostFiles = [];
+        this.srcContents.clear();
+        let compileFiles = []; // need to be compiled
         let arch = files[0].getArch();
-        if (arch.search('os.') !== -1) {
-            arch = 'server';
-        }
-        this.hostFiles[arch] = [];
-        let compileFiles = []; // need to be comipled
 
         files.forEach(file => {
             let fileName = file.getPathInPackage();
+            let packageName = file.getPackageName();
+            let fileContent = file.getContentsAsString();
+            let version = file.getSourceHash();
 
             // push new files into `hostFiles`
-            this.hostFiles[arch].push(fileName);
+            this.hostFiles.push(fileName);
+            this.srcContents.set(fileName, fileContent);
 
-            // check changed files
-            let hash = file.getSourceHash();
-            if (!this.cache[arch].has(fileName)) {
+            // filter files
+            if (!this.cache.has(fileName)) {
                 // debug('Compile new File: %j', fileName);
-                this.cache[arch].set(fileName, {
-                    version: hash + 'tmp',
-                    code: undefined,
-                    map: undefined,
+                if (file.getExtension() === 'd.ts') {
+                    this.cache.set(fileName, {
+                        version: version,
+                        error: e => file.error(e),
+                        code: undefined,
+                        map: undefined
+                    });
+                    return;
+                }
+                this.cache.set(fileName, {
+                    version: 'pre' + version,
                     error: e => file.error(e),
-                    addJavaScript: f => file.addJavaScript(f)
+                    code: undefined,
+                    map: undefined
                 });
-                // d.ts files exclude
-                if (file.getExtension() === 'd.ts') return;
                 compileFiles.push(file);
 
-            } else if (this.cache[arch].get(fileName).version !== file.getSourceHash()) {
+            } else if (this.cache.get(fileName).version !== version) {
                 // debug('Compile changed File: %j', fileName);
-                this.cache[arch].set(fileName, {
-                    version: hash + 'tmp',
+                if (file.getExtension() === 'd.ts') {
+                    this.cache.set(fileName, {
+                        version: version,
+                        error: e => file.error(e),
+                    });
+                    return;
+                }
+                this.cache.set(fileName, {
                     error: e => file.error(e),
-                    addJavaScript: f => file.addJavaScript(f)
+                    version: 'pre' + version,
                 });
-
-                // d.ts files exclude
-                if (file.getExtension() === 'd.ts') return;
                 compileFiles.push(file);
 
             } else {
@@ -188,10 +182,10 @@ class Compiler {
                 if (file.getExtension() === 'd.ts') return;
                 file.addJavaScript({
                     type: 'ts',
-                    data: this.cache[arch].get(fileName).code,
+                    data: this.cache.get(fileName).code,
                     path: fileName.replace(/\.tsx?$/, '.js'),
                     sourcePath: fileName,
-                    sourceMap: this.cache[arch].get(fileName).map,
+                    sourceMap: this.cache.get(fileName).map,
                     bare: this.options.module !== ts.ModuleKind.None ? true : false
                 });
             }
@@ -199,69 +193,77 @@ class Compiler {
 
         // exec
         compileFiles.forEach(file => {
-            this.emitFile(file, arch);
+            this.emitFile(file);
         });
 
         // diagnostics
         this.diagnostics(arch);
+
     }
 
-    emitFile(file, arch) {
+    emitFile(file) {
         let fileName = file.getPathInPackage();
         let fileContent = file.getContentsAsString();
         let packageName = file.getPackageName();
-        console.log(file.getDisplayPath() + '.......');
-        packageName = packageName.slice(packageName.indexOf(":")+1);
-        fileName = packageName
-            ? "packages/" + packageName + "/" + fileName
-            : fileName;
+        let sourceMapPath = file.getDisplayPath();
+
         // debug('Package Name is: %j', packageName);
         try {
-            var output = this.services[arch].getEmitOutput(fileName);
+            var output = this.services.getEmitOutput(fileName);
         } catch (err) {
             file.error({
                 message: err.message
             });
         }
-        if (!output.emitSkipped && output.outputFiles.length > 0) {
+        if (!output.emitSkipped) {
+            if (output.outputFiles.length > 0) {
 
-            // get transpiled code
-            let moduleName = fileName.replace(/\.tsx?$/, '').replace(/\\/g, '/');
-            let code = output.outputFiles[1].text
-                .replace("System.register([", 'System.register("' + moduleName + '",[')
-                .replace("define([", 'define("' + moduleName + '",[');
-            code = code.slice(0, code.lastIndexOf("//#"));
-            this.cache[arch].get(fileName).code = code;
+                // get transpiled code
+                let moduleName = fileName.replace(/\.tsx?$/, '').replace(/\\/g, '/');
+                moduleName = packageName ? packageName.slice(packageName.indexOf(":") + 1) + '/' + moduleName : moduleName;
 
-            // get source map
-            let map = prepareSourceMap(
-                output.outputFiles[0].text,
-                fileContent,
-                fileName);
-            this.cache[arch].get(fileName).map = map;
+                // bundle for systemjs and amd
+                let code = output.outputFiles[1].text
+                    .replace("System.register([", 'System.register("' + moduleName + '",[')
+                    .replace("define([", 'define("' + moduleName + '",[');
+                code = code.slice(0, code.lastIndexOf("//#"));
 
-            // write to js
-            this.cache[arch].get(fileName).version = this.cache[arch].get(fileName).version.slice(0, -3);
-            this.cache[arch].get(fileName).addJavaScript({
-                type: 'ts',
-                data: code,
-                path: output.outputFiles[1].name,
-                sourcePath: fileName,
-                sourceMap: map,
-                bare: this.options.module !== ts.ModuleKind.None ? true : false
-            });
+                // remove source map ref
+                this.cache.get(fileName).code = code;
+
+                // make source map
+                let map = prepareSourceMap(
+                    output.outputFiles[0].text,
+                    fileContent,
+                    sourceMapPath);
+                this.cache.get(fileName).map = map;
+
+                // write to js
+                this.cache.get(fileName).version = this.cache.get(fileName).version.slice(3);
+                file.addJavaScript({
+                    type: 'ts',
+                    data: code,
+                    path: output.outputFiles[1].name,
+                    sourcePath: fileName,
+                    sourceMap: map,
+                    bare: this.options.module !== ts.ModuleKind.None ? true : false
+                });
+            } else {
+                this.cache.get(fileName).version = this.cache.get(fileName).version.slice(3);
+            }
         }
     }
 
     diagnostics(arch) {
-        let program = this.services[arch].getProgram();
-        let allDiagnostics = this.services[arch].getCompilerOptionsDiagnostics()
+        let program = this.services.getProgram();
+        let allDiagnostics = this.services.getCompilerOptionsDiagnostics()
             .concat(program.getSyntacticDiagnostics())
             .concat(program.getSemanticDiagnostics());
 
+        if (allDiagnostics.length) msg[1](` Diagnostics for ${arch}: \n`)
         allDiagnostics.forEach(diagnostic => {
             let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-            if (diagnostic.file === undefined) {
+            if (!diagnostic.file) {
                 msg[1](` ${message}`);
                 return;
             }
@@ -273,13 +275,14 @@ class Compiler {
             if (this.options.noEmitOnError) {
                 // stop the meteor app wait for fix
                 // debug('Emit Error File: %j', diagnostic.file.fileName);
-                this.cache[arch].get(diagnostic.file.fileName).error({
+                this.cache.get(diagnostic.file.fileName).error({
                     message: message,
                     column: character + 1,
                     line: line + 1
                 });
                 return;
             }
+
             let category = diagnostic.category;
             msg[category](` [${diagnostic.file.fileName}](${line + 1},${character + 1}): ${message}`);
         });
