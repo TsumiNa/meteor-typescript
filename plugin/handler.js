@@ -12,16 +12,10 @@ Plugin.registerCompiler({
     return new Compiler();
 });
 
-function prepareSourceMap(sourceMapContent, fileContent, sourceMapPath, packageName) {
+function prepareSourceMap(sourceMapContent, fileContent, sourceMapPath) {
     let sourceMapJson = JSON.parse(sourceMapContent);
     sourceMapJson.sourcesContent = [fileContent];
-
-    // if source in a package
-    if (packageName) {
-        sourceMapJson.sources = ['packages/' + sourceMapPath];
-    } else {
-        sourceMapJson.sources = [sourceMapPath];
-    }
+    sourceMapJson.sources = [sourceMapPath];
     return sourceMapJson;
 }
 
@@ -216,7 +210,12 @@ class Compiler {
         let fileName = file.getPathInPackage();
         let fileContent = file.getContentsAsString();
         let packageName = file.getPackageName();
-        // debug('Emit File: %j', Date.now());
+        console.log(file.getDisplayPath() + '.......');
+        packageName = packageName.slice(packageName.indexOf(":")+1);
+        fileName = packageName
+            ? "packages/" + packageName + "/" + fileName
+            : fileName;
+        // debug('Package Name is: %j', packageName);
         try {
             var output = this.services[arch].getEmitOutput(fileName);
         } catch (err) {
@@ -238,8 +237,7 @@ class Compiler {
             let map = prepareSourceMap(
                 output.outputFiles[0].text,
                 fileContent,
-                fileName,
-                packageName);
+                fileName);
             this.cache[arch].get(fileName).map = map;
 
             // write to js
