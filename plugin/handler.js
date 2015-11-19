@@ -260,7 +260,11 @@ class Compiler {
             .concat(program.getSyntacticDiagnostics())
             .concat(program.getSemanticDiagnostics());
 
-        if (allDiagnostics.length) msg[1](` Diagnostics for ${arch}: \n`)
+        if (allDiagnostics.length) {
+            console.info('\n');
+            console.info('\n');
+            msg[2](` Diagnostics for ${arch}:            \n`);
+        }
         allDiagnostics.forEach(diagnostic => {
             let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
             if (!diagnostic.file) {
