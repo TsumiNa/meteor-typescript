@@ -154,8 +154,7 @@ typescriptCompiler = class tsCompiler{
 
         if (allDiagnostics.length) {
             console.info('\n');
-            console.info('\n');
-            msg[2](` Diagnostics for ${arch}:            \n`);
+            msg[2](` Diagnostics for ${arch}:              `);
         }
         allDiagnostics.forEach(diagnostic => {
             let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
