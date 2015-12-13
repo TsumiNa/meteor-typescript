@@ -1,7 +1,7 @@
 /* global Package */
 Package.describe({
     name: 'tsumina:meteor-typescript',
-    version: '0.5.7',
+    version: '0.6.0',
     // Brief, one-line summary of the package.
     summary: 'A configurable typescript compiler for transpiler .ts files to .js and use it both side',
     // URL to the Git repository containing the source code for this package.
@@ -25,7 +25,7 @@ Package.registerBuildPlugin({
         'plugin/handler.js'
     ],
     npmDependencies: {
-        'typescript': '1.6.2',
+        'typescript': '1.7.3',
         'chalk': '1.1.1',
         'fs-extra': '0.26.2',
         'lodash': '3.10.1'

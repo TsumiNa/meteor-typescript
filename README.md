@@ -23,6 +23,9 @@ Meteor definiton flies can be found here [Meteor TypeScript libraries](https://g
 
 ## Change Log
 
+#### 0.6.0
+- Update to typescript@1.7.3.
+
 #### 0.5.6
 - Improve error output.
 
